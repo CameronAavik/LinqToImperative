@@ -1,3 +1,4 @@
+using System;
 using System.Linq.Expressions;
 
 namespace LinqToImperative
@@ -7,6 +8,14 @@ namespace LinqToImperative
     /// </summary>
     public interface IQueryExecutor
     {
+        /// <summary>
+        /// Compiles an expression.
+        /// </summary>
+        /// <typeparam name="T">The type returned by the expression.</typeparam>
+        /// <param name="expression">The expression to compile.</param>
+        /// <returns>The compiled expression as a function.</returns>
+        Func<T> Compile<T>(Expression expression);
+
         /// <summary>
         /// Compiles and executes the expression.
         /// </summary>

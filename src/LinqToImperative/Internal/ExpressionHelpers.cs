@@ -15,7 +15,7 @@ namespace LinqToImperative.Internal
         /// <param name="expr">The lambda expression to substitute.</param>
         /// <param name="subs">The parameters to substitute in the body.</param>
         /// <returns>The body of the lambda after substituting the arguments.</returns>
-        internal static Expression Substitute(this LambdaExpression expr, params ParameterExpression[] subs)
+        public static Expression Substitute(this LambdaExpression expr, params Expression[] subs)
         {
             var subsDict = new Dictionary<ParameterExpression, Expression>();
             for (int i = 0; i < subs.Length; i++)

@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
+using LinqToImperative.Internal;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LinqToImperative.Tests
@@ -7,6 +9,31 @@ namespace LinqToImperative.Tests
     [TestClass]
     public class ImperativeQueryableTests
     {
+        [TestMethod]
+        public void CompiledTest()
+        {
+            var random = new Random(42);
+            var data = new int[100];
+            for (int i = 0; i < 100; i++)
+            {
+                data[i] = random.Next(1000);
+            }
+
+            var source = new ArrayQueryableSource<int>(data);
+            var executor = new QueryExecutor();
+            var provider = new ImperativeQueryProvider(executor);
+            var queryable = new ImperativeQueryable<int>(provider, source);
+
+            Expression<Func<IQueryable<int>, int>> expr =
+                queryable => queryable
+                    .Where(i => i % 2 == 0)
+                    .Aggregate(0, (acc, elem) => acc + elem);
+
+            var substitutedExpr = expr.Substitute(new[] { queryable.Expression });
+            var f = executor.Compile<int>(substitutedExpr);
+            Assert.AreEqual(0, f());
+        }
+
         [TestMethod]
         public void AggregateTest()
         {

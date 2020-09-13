@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using LinqToImperative.Internal;
 
 namespace LinqToImperative
@@ -11,13 +13,8 @@ namespace LinqToImperative
     /// </summary>
     public class QueryExecutor : IQueryExecutor
     {
-        /// <summary>
-        /// Compiles and executes the expression.
-        /// </summary>
-        /// <typeparam name="T">The type returned by the expression.</typeparam>
-        /// <param name="expression">The expression to execute.</param>
-        /// <returns>The result after executing the expression.</returns>
-        public T Execute<T>(Expression expression)
+        /// <inheritdoc/>
+        public Func<T> Compile<T>(Expression expression)
         {
             var visitor = new QueryTranslationVisitor();
             expression = visitor.Visit(expression);
@@ -39,8 +36,11 @@ namespace LinqToImperative
             expression = Expression.Block(paramList, paramAssignList);
 
             var query = Expression.Lambda<Func<T>>(expression);
-            return query.Compile().Invoke();
+            return query.Compile();
         }
+
+        /// <inheritdoc/>
+        public T Execute<T>(Expression expression) => this.Compile<T>(expression).Invoke();
 
         /// <summary>
         /// An ExpressionVisitor that translates IQueryable calls into <see cref="IExprEnumerable"/> objects.
@@ -55,7 +55,7 @@ namespace LinqToImperative
             /// <inheritdoc/>
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                if (node.Method.DeclaringType == typeof(System.Linq.Queryable))
+                if (node.Method.DeclaringType == typeof(Queryable))
                 {
                     Expression source = this.Visit(node.Arguments[0]);
                     if (source is ConstantExpression constExpr && constExpr.Value is IExprEnumerable exprEnumerable)
