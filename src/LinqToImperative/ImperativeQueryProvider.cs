@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using LinqToImperative.Internal;
 
 namespace LinqToImperative
 {
@@ -20,7 +20,7 @@ namespace LinqToImperative
             = typeof(ImperativeQueryProvider).GetRuntimeMethods()
                 .Single(m => m.Name == nameof(Execute) && m.IsGenericMethod);
 
-        private readonly IQueryExecutor _queryExecutor;
+        private readonly IQueryExecutor queryExecutor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImperativeQueryProvider"/> class.
@@ -28,7 +28,7 @@ namespace LinqToImperative
         /// <param name="queryExecutor">The query executor.</param>
         public ImperativeQueryProvider(IQueryExecutor queryExecutor)
         {
-            _queryExecutor = queryExecutor ?? throw new ArgumentNullException(nameof(queryExecutor));
+            this.queryExecutor = queryExecutor ?? throw new ArgumentNullException(nameof(queryExecutor));
         }
 
         /// <inheritdoc/>
@@ -40,7 +40,7 @@ namespace LinqToImperative
             }
 
             // Extract T from the first IEnumerable<T> interface that is implemented on the expression's type.
-            Type elementType = GetIEnumerableElementType(expression.Type);
+            Type elementType = expression.Type.GetIEnumerableElementType();
 
             return GenericCreateQueryMethod
                 .MakeGenericMethod(elementType)
@@ -49,10 +49,8 @@ namespace LinqToImperative
         }
 
         /// <inheritdoc/>
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
-        {
-            return new ImperativeQueryable<TElement>(this, expression);
-        }
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression) =>
+            new ImperativeQueryable<TElement>(this, expression);
 
         /// <inheritdoc/>
         public object? Execute(Expression expression)
@@ -62,34 +60,11 @@ namespace LinqToImperative
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            return GenericExecuteMethod
-                .MakeGenericMethod(expression.Type)
-                .Invoke(this, new object[] { expression });
+            return GenericExecuteMethod.MakeGenericMethod(expression.Type).Invoke(this, new object[] { expression });
         }
 
         /// <inheritdoc/>
-        public TResult Execute<TResult>(Expression expression)
-        {
-            return _queryExecutor.Execute<TResult>(expression);
-        }
-
-        /// <summary>
-        /// Returns the T from the first <see cref="IEnumerable{T}"/> interface that is implemented by the provided type.
-        /// </summary>
-        /// <param name="type">The type to get the element type from.</param>
-        /// <returns>The element type.</returns>
-        private static Type GetIEnumerableElementType(Type type)
-        {
-            Type typeDefinitionToFind = typeof(IEnumerable<>);
-            foreach (var implementedInterface in type.GetInterfaces())
-            {
-                if (implementedInterface.IsGenericType && implementedInterface.GetGenericTypeDefinition() == typeDefinitionToFind)
-                {
-                    return implementedInterface.GenericTypeArguments[0];
-                }
-            }
-
-            throw new ArgumentException("The type does not implement IEnumerable<T>", nameof(type));
-        }
+        public TResult Execute<TResult>(Expression expression) =>
+            this.queryExecutor.Execute<TResult>(expression);
     }
 }

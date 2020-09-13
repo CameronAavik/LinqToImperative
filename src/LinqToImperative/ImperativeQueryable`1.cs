@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +17,10 @@ namespace LinqToImperative
         /// Initializes a new instance of the <see cref="ImperativeQueryable{T}"/> class.
         /// </summary>
         /// <param name="queryProvider">The query provider.</param>
-        public ImperativeQueryable(IQueryProvider queryProvider)
+        /// <param name="queryableSource">The queryable source.</param>
+        public ImperativeQueryable(IQueryProvider queryProvider, IQueryableSource queryableSource)
+            : this(queryProvider, new QueryableSourceExpression(queryableSource))
         {
-            Provider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
-            Expression = Expression.Constant(this);
         }
 
         /// <summary>
@@ -30,8 +30,8 @@ namespace LinqToImperative
         /// <param name="expression">The underlying expression tree.</param>
         public ImperativeQueryable(IQueryProvider queryProvider, Expression expression)
         {
-            Provider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
-            Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            this.Provider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         /// <inheritdoc/>
@@ -45,10 +45,10 @@ namespace LinqToImperative
 
         /// <inheritdoc/>
         public IEnumerator<T> GetEnumerator()
-            => Provider.Execute<IEnumerable<T>>(Expression).GetEnumerator()!;
+            => this.Provider.Execute<IEnumerable<T>>(this.Expression).GetEnumerator()!;
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
-            => Provider.Execute<IEnumerable>(Expression).GetEnumerator();
+            => this.Provider.Execute<IEnumerable>(this.Expression).GetEnumerator();
     }
 }
