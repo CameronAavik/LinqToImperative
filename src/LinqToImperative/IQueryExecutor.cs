@@ -9,6 +9,16 @@ namespace LinqToImperative
     public interface IQueryExecutor
     {
         /// <summary>
+        /// Compiles an expression that takes one parameter.
+        /// </summary>
+        /// <typeparam name="TParam1">The type of the parameter.</typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="expression">The expresion to compile.</param>
+        /// <param name="param1">The parameter expression representing the first parameter.</param>
+        /// <returns>The compiled expresion as a function.</returns>
+        Func<TParam1, TResult> Compile<TParam1, TResult>(Expression expression, ParameterExpression param1);
+
+        /// <summary>
         /// Compiles an expression.
         /// </summary>
         /// <typeparam name="T">The type returned by the expression.</typeparam>

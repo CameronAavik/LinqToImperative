@@ -19,19 +19,15 @@ namespace LinqToImperative.Tests
                 data[i] = random.Next(1000);
             }
 
-            var source = new ArrayQueryableSource<int>(data);
-            var executor = new QueryExecutor();
-            var provider = new ImperativeQueryProvider(executor);
-            var queryable = new ImperativeQueryable<int>(provider, source);
-
-            Expression<Func<IQueryable<int>, int>> expr =
-                queryable => queryable
+            var f = ImperativeQueryableExtensions.Compile<int[], int>
+                (data => data
+                    .AsImperativeQueryable()
                     .Where(i => i % 2 == 0)
-                    .Aggregate(0, (acc, elem) => acc + elem);
+                    .Aggregate(0, (acc, elem) => acc + elem));
 
-            var substitutedExpr = expr.Substitute(new[] { queryable.Expression });
-            var f = executor.Compile<int>(substitutedExpr);
-            Assert.AreEqual(0, f());
+            var expected = data.Where(i => i % 2 == 0).Aggregate(0, (acc, elem) => acc + elem);
+
+            Assert.AreEqual(expected, f(data));
         }
 
         [TestMethod]
@@ -45,7 +41,7 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array));
+            int actual = TestQueryableCall(array.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
         }
 
@@ -62,7 +58,7 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array));
+            int actual = TestQueryableCall(array.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
         }
 
@@ -79,7 +75,7 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array));
+            int actual = TestQueryableCall(array.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
         }
 
@@ -96,7 +92,7 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array2d));
+            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
         }
 
@@ -113,7 +109,7 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array2d));
+            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
         }
 
@@ -132,16 +128,8 @@ namespace LinqToImperative.Tests
             }
 
             int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(CreateQueryable(array2d));
+            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
             Assert.AreEqual(expected, actual);
-        }
-
-        private static ImperativeQueryable<T> CreateQueryable<T>(T[] arr)
-        {
-            var source = new ArrayQueryableSource<T>(arr);
-            var executor = new QueryExecutor();
-            var provider = new ImperativeQueryProvider(executor);
-            return new ImperativeQueryable<T>(provider, source);
         }
     }
 }

@@ -15,6 +15,11 @@ namespace LinqToImperative.Internal
         /// <returns>The element type.</returns>
         internal static Type GetIEnumerableElementType(this Type type)
         {
+            if (type.IsArray)
+            {
+                return type.GetElementType()!;
+            }
+
             Type typeDefinitionToFind = typeof(IEnumerable<>);
             foreach (Type implementedInterface in type.GetInterfaces())
             {

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using LinqToImperative.Internal;
 
 namespace LinqToImperative
 {
@@ -13,16 +14,6 @@ namespace LinqToImperative
     /// <typeparam name="T">The type of the elements returned when the query is executed.</typeparam>
     public class ImperativeQueryable<T> : IOrderedQueryable<T>
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImperativeQueryable{T}"/> class.
-        /// </summary>
-        /// <param name="queryProvider">The query provider.</param>
-        /// <param name="queryableSource">The queryable source.</param>
-        public ImperativeQueryable(IQueryProvider queryProvider, IQueryableSource queryableSource)
-            : this(queryProvider, new QueryableSourceExpression(queryableSource))
-        {
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ImperativeQueryable{T}"/> class.
         /// </summary>
