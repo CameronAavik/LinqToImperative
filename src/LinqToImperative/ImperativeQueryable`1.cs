@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using LinqToImperative.Internal;
 
 namespace LinqToImperative
 {
@@ -21,8 +20,8 @@ namespace LinqToImperative
         /// <param name="expression">The underlying expression tree.</param>
         public ImperativeQueryable(IQueryProvider queryProvider, Expression expression)
         {
-            this.Provider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
-            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            Provider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
+            Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         /// <inheritdoc/>
@@ -36,10 +35,10 @@ namespace LinqToImperative
 
         /// <inheritdoc/>
         public IEnumerator<T> GetEnumerator()
-            => this.Provider.Execute<IEnumerable<T>>(this.Expression).GetEnumerator()!;
+            => Provider.Execute<IEnumerable<T>>(Expression).GetEnumerator()!;
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
-            => this.Provider.Execute<IEnumerable>(this.Expression).GetEnumerator();
+            => Provider.Execute<IEnumerable>(Expression).GetEnumerator();
     }
 }

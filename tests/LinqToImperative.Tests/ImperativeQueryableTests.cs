@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using LinqToImperative.Internal;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -10,7 +9,28 @@ namespace LinqToImperative.Tests
     public class ImperativeQueryableTests
     {
         [TestMethod]
-        public void CompiledTest()
+        public void CompiledTest1()
+        {
+            var random = new Random(42);
+            var data = new int[100];
+            for (int i = 0; i < 100; i++)
+            {
+                data[i] = random.Next(1000);
+            }
+
+            var f = ImperativeQueryableExtensions.Compile<int>
+                (() => data
+                    .AsImperativeQueryable()
+                    .Where(i => i % 2 == 0)
+                    .Aggregate(0, (acc, elem) => acc + elem));
+
+            var expected = data.Where(i => i % 2 == 0).Aggregate(0, (acc, elem) => acc + elem);
+
+            Assert.AreEqual(expected, f());
+        }
+
+        [TestMethod]
+        public void CompiledTest2()
         {
             var random = new Random(42);
             var data = new int[100];
@@ -129,6 +149,25 @@ namespace LinqToImperative.Tests
 
             int expected = TestQueryableCall(array2d.AsQueryable());
             int actual = TestQueryableCall(array2d.AsImperativeQueryable());
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void ComplexTestWithClosureVariables()
+        {
+            int[][] array2d = Enumerable.Range(0, 100).Select(i => Enumerable.Range(i, 100).ToArray()).ToArray();
+
+            static int TestQueryableCall(IQueryable<int[]> q, int x, int y, int z)
+            {
+                return q
+                    .SelectMany(i => i)
+                    .Where(i => i % 3 == 0)
+                    .Select(i => i * 4)
+                    .Aggregate(x, (acc, elem) => (acc + elem * y) % z);
+            }
+
+            int expected = TestQueryableCall(array2d.AsQueryable(), 13, 27, 1000001);
+            int actual = TestQueryableCall(array2d.AsImperativeQueryable(), 13, 27, 1000001);
             Assert.AreEqual(expected, actual);
         }
     }

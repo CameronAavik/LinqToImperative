@@ -22,9 +22,9 @@ namespace LinqToImperative.Internal
             Func<ParameterExpression, EnumerableExpression> getNestedEnumerable,
             Type elementType)
         {
-            this.BaseEnumerable = baseEnumerable ?? throw new ArgumentNullException(nameof(baseEnumerable));
-            this.GetNestedEnumerable = getNestedEnumerable ?? throw new ArgumentNullException(nameof(getNestedEnumerable));
-            this.ElementType = elementType ?? throw new ArgumentNullException(nameof(elementType));
+            BaseEnumerable = baseEnumerable ?? throw new ArgumentNullException(nameof(baseEnumerable));
+            GetNestedEnumerable = getNestedEnumerable ?? throw new ArgumentNullException(nameof(getNestedEnumerable));
+            ElementType = elementType ?? throw new ArgumentNullException(nameof(elementType));
         }
 
         /// <summary>

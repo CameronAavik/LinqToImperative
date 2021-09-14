@@ -1,23 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30323.103
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31612.314
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A490C2B3-65BE-4964-B978-2B90B541969A}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
-		CodeAnalysis.ruleset = CodeAnalysis.ruleset
 		LICENSE.txt = LICENSE.txt
 		nuget.config = nuget.config
-		stylecop.json = stylecop.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToImperative", "src\LinqToImperative\LinqToImperative.csproj", "{7555F672-5ADC-4EF5-94D1-7FE2DFD487DF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToImperative.Tests", "tests\LinqToImperative.Tests\LinqToImperative.Tests.csproj", "{DF50926A-DD05-402F-A19E-C5F546444CEB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToImperative.Benchmarks", "tests\LinqToImperative.Benchmarks\LinqToImperative.Benchmarks.csproj", "{55E37E0D-C30E-448A-8B85-C285B6C5EA84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToImperative.Benchmarks", "tests\LinqToImperative.Benchmarks\LinqToImperative.Benchmarks.csproj", "{55E37E0D-C30E-448A-8B85-C285B6C5EA84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

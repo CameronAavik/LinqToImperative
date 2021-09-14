@@ -4,26 +4,14 @@
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <CodeAnalysisRuleSet>..\..\CodeAnalysis.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet></CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="..\..\.editorconfig" Link=".editorconfig">
-      <Visible>false</Visible>
-    </None>
-    <AdditionalFiles Include="..\..\stylecop.json" Link="stylecop.json">
-      <Visible>false</Visible>
-    </AdditionalFiles>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.205">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Nuqleon.Linq.CompilerServices" Version="1.0.0-beta.1" />
   </ItemGroup>
 
 </Project>

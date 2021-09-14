@@ -15,7 +15,7 @@ namespace LinqToImperative.Internal
         public abstract Type ElementType { get; }
 
         /// <inheritdoc/>
-        public override Type Type => typeof(IQueryable<>).MakeGenericType(this.ElementType);
+        public override Type Type => typeof(IQueryable<>).MakeGenericType(ElementType);
 
         /// <inheritdoc />
         public sealed override ExpressionType NodeType => ExpressionType.Extension;

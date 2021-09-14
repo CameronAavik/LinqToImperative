@@ -44,11 +44,11 @@ namespace LinqToImperative.Internal
             /// <inheritdoc/>
             protected override Expression VisitParameter(ParameterExpression node)
             {
-                for (int i = 0; i < this.pars.Length; i++)
+                for (int i = 0; i < pars.Length; i++)
                 {
-                    if (node == this.pars[i])
+                    if (node == pars[i])
                     {
-                        return this.replacements[i];
+                        return replacements[i];
                     }
                 }
 

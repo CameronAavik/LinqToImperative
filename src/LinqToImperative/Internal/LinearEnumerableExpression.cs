@@ -22,10 +22,10 @@ namespace LinqToImperative.Internal
             Func<Func<ParameterExpression, Expression>, Expression> moveNext,
             Type elementType)
         {
-            this.Initialize = initialize ?? throw new ArgumentNullException(nameof(initialize));
-            this.HasNext = hasNext ?? throw new ArgumentNullException(nameof(hasNext));
-            this.MoveNext = moveNext ?? throw new ArgumentNullException(nameof(moveNext));
-            this.ElementType = elementType ?? throw new ArgumentNullException(nameof(elementType));
+            Initialize = initialize ?? throw new ArgumentNullException(nameof(initialize));
+            HasNext = hasNext ?? throw new ArgumentNullException(nameof(hasNext));
+            MoveNext = moveNext ?? throw new ArgumentNullException(nameof(moveNext));
+            ElementType = elementType ?? throw new ArgumentNullException(nameof(elementType));
         }
 
         /// <summary>

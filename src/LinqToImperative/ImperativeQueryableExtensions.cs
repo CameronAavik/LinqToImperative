@@ -43,7 +43,7 @@ namespace LinqToImperative
         /// <returns>The queryable object.</returns>
         public static ImperativeQueryable<T> AsImperativeQueryable<T>(this T[] arr)
         {
-            var arrExpr = Expression.Constant(arr);
+            var arrExpr = new EnumerableSourceExpression(Expression.Constant(arr));
             var expression = EnumerableExpressionExtensions.OfArray(arrExpr, typeof(T));
             return Create<T>(expression);
         }
@@ -56,7 +56,7 @@ namespace LinqToImperative
         /// <returns>The queryable object.</returns>
         public static ImperativeQueryable<T> AsImperativeQueryable<T>(this IEnumerable<T> enumerable)
         {
-            var enumerableExpr = Expression.Constant(enumerable);
+            var enumerableExpr = new EnumerableSourceExpression(Expression.Constant(enumerable));
             var expression = EnumerableExpressionExtensions.OfEnumerable(enumerableExpr, typeof(T));
             return Create<T>(expression);
         }

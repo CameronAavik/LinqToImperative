@@ -65,6 +65,6 @@ namespace LinqToImperative
 
         /// <inheritdoc/>
         public TResult Execute<TResult>(Expression expression) =>
-            this.queryExecutor.Execute<TResult>(expression);
+            queryExecutor.Execute<TResult>(expression);
     }
 }

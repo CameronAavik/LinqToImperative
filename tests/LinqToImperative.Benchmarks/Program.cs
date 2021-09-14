@@ -12,79 +12,90 @@ namespace LinqToImperative.Benchmarks
     //[EtwProfiler]
     public class TestBenchmark
     {
-        [Params(10, 100, 1000, 10000, 100000)]
+        [Params(10, 100, 1000, 10000, 100000, 1000000, 10000000)]
         public int N { get; set; }
 
         private int[] data;
 
-        private static readonly Func<int[], int> compiledQueryableCall =
-            ImperativeQueryableExtensions.Compile<int[], int>(
-                data => data
-                    .AsImperativeQueryable()
-                    .Where(i => i % 2 == 0)
-                    .Aggregate(0, (acc, elem) => acc + elem));
+        private static readonly Expression<Func<int[], int>> queryableCall = data =>
+            data
+                .AsImperativeQueryable()
+                .Where(i => (i & 1) == 0)
+                .Aggregate(0, (acc, elem) => acc + elem);
 
-        private static readonly Func<int[], int> compiledHandWrittenExpression =
-            SumEvensHandWrittenExpressionImpl().Compile();
+        private static readonly Func<int[], int> compiledQueryableCall = ImperativeQueryableExtensions.Compile(queryableCall);
+        private static readonly Func<int[], int> compiledHandWrittenExpression = SumEvensHandWrittenExpressionImpl().Compile();
+
 
         [GlobalSetup]
         public void GlobalSetup()
         {
             var random = new Random(1234);
-            this.data = new int[this.N];
-            for (int i = 0; i < this.N; i++)
+            data = new int[N];
+            for (int i = 0; i < N; i++)
             {
-                this.data[i] = random.Next(1000);
+                data[i] = random.Next(1000);
             }
         }
 
         [Benchmark]
         public int SumEvensHandWritten()
         {
-            return SumEvensHandWrittenImpl(this.data);
-        }
+            int sum = 0;
+            int length = data.Length;
+            for (int i = 0; i < length; i++)
+            {
+                int val = data[i];
+                if ((val & 1) == 0)
+                {
+                    sum += val;
+                }
+            }
 
-        [Benchmark]
-        public int SumEvensCompiledHandWrittenExpression()
-        {
-            return compiledHandWrittenExpression(this.data);
-        }
-
-        [Benchmark]
-        public int SumEvensCompiledImperativeQueryable()
-        {
-            return compiledQueryableCall(this.data);
-        }
-
-        [Benchmark]
-        public int SumEventsHandWrittenExpression()
-        {
-            return SumEvensHandWrittenExpressionImpl().Compile()(this.data);
+            return sum;
         }
 
         [Benchmark]
         public int SumEvensImperativeQueryable()
         {
-            return this.data
+            return data
                 .AsImperativeQueryable()
-                .Where(i => i % 2 == 0)
+                .Where(i => (i & 1) == 0)
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
         [Benchmark]
         public int SumEvensEnumerable()
         {
-            return this.data
-                .Where(i => i % 2 == 0)
+            return data
+                .Where(i => (i & 1) == 0)
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
-        [Benchmark]
+        //[Benchmark]
+        public int SumEvensCompiledHandWrittenExpression()
+        {
+            return compiledHandWrittenExpression(data);
+        }
+
+        //[Benchmark]
+        public int SumEvensCompiledImperativeQueryable()
+        {
+            return compiledQueryableCall(data);
+        }
+
+        //[Benchmark]
+        public int SumEventsHandWrittenExpression()
+        {
+            return SumEvensHandWrittenExpressionImpl().Compile()(data);
+        }
+
+        //[Benchmark]
         public int SumEvensQueryable()
         {
-            return this.data
+            return data
                 .AsQueryable()
-                .Where(i => i % 2 == 0)
+                .Where(i => (i & 1) == 0)
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
@@ -112,29 +123,13 @@ namespace LinqToImperative.Benchmarks
                                 Expression.PostIncrementAssign(iVar),
                                 Expression.IfThen(
                                     Expression.Equal(
-                                        Expression.Modulo(elemVar, Expression.Constant(2)),
+                                        Expression.And(elemVar, Expression.Constant(1)),
                                         Expression.Constant(0)),
                                     Expression.Assign(sumVar, Expression.Add(sumVar, elemVar)))),
                             Expression.Break(breakLabel)),
                         breakLabel),
                     sumVar),
                 dataVar);
-        }
-
-        private static int SumEvensHandWrittenImpl(int[] data)
-        {
-            int sum = 0;
-            int length = data.Length;
-            for (int i = 0; i < length; i++)
-            {
-                int val = data[i];
-                if (val % 2 == 0)
-                {
-                    sum += val;
-                }
-            }
-
-            return sum;
         }
     }
 
