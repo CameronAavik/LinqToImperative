@@ -1,3 +1,6 @@
+using LinqToImperative.ExprEnumerable;
+using LinqToImperative.Expressions;
+using LinqToImperative.QueryCompilation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,10 +38,17 @@ namespace LinqToImperative
 
         /// <inheritdoc/>
         public IEnumerator<T> GetEnumerator()
-            => Provider.Execute<IEnumerable<T>>(Expression).GetEnumerator()!;
+            => throw new NotImplementedException("Enumerating over an imperative queryable is not implemented yet.");
 
         /// <inheritdoc/>
-        IEnumerator IEnumerable.GetEnumerator()
-            => Provider.Execute<IEnumerable>(Expression).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <summary>
+        /// Creates a new imperative queryable from an expression backed enumerable
+        /// </summary>
+        /// <param name="enumerable">An expression-backed enumerable</param>
+        /// <returns></returns>
+        internal static ImperativeQueryable<T> Create(IExprEnumerable enumerable) =>
+            new(new ImperativeQueryProvider(QueryCompiler.Instance), new EnumerableExpression(enumerable));
     }
 }

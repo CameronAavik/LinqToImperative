@@ -5,7 +5,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnostics.Windows.Configs;
 using BenchmarkDotNet.Running;
-using LinqToImperative.Internal;
+using LinqToImperative.Converters;
 
 namespace LinqToImperative.Benchmarks
 {
@@ -23,7 +23,7 @@ namespace LinqToImperative.Benchmarks
                 .Where(i => (i & 1) == 0)
                 .Aggregate(0, (acc, elem) => acc + elem);
 
-        private static readonly Func<int[], int> compiledQueryableCall = ImperativeQueryableExtensions.Compile(queryableCall);
+        private static readonly Func<int[], int> compiledQueryableCall = LinqToImperative.CompileQuery(queryableCall);
         private static readonly Func<int[], int> compiledHandWrittenExpression = SumEvensHandWrittenExpressionImpl().Compile();
 
 
@@ -72,25 +72,25 @@ namespace LinqToImperative.Benchmarks
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SumEvensCompiledHandWrittenExpression()
         {
             return compiledHandWrittenExpression(data);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SumEvensCompiledImperativeQueryable()
         {
             return compiledQueryableCall(data);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SumEventsHandWrittenExpression()
         {
             return SumEvensHandWrittenExpressionImpl().Compile()(data);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SumEvensQueryable()
         {
             return data

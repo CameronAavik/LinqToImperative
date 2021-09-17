@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using LinqToImperative.Internal;
+using LinqToImperative.Converters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LinqToImperative.Tests
@@ -18,15 +18,19 @@ namespace LinqToImperative.Tests
                 data[i] = random.Next(1000);
             }
 
-            var f = ImperativeQueryableExtensions.Compile<int>
+            var compiledQuery = LinqToImperative.CompileQuery
                 (() => data
                     .AsImperativeQueryable()
                     .Where(i => i % 2 == 0)
                     .Aggregate(0, (acc, elem) => acc + elem));
 
-            var expected = data.Where(i => i % 2 == 0).Aggregate(0, (acc, elem) => acc + elem);
+            var expected = data
+                .Where(i => i % 2 == 0)
+                .Aggregate(0, (acc, elem) => acc + elem);
 
-            Assert.AreEqual(expected, f());
+            var actual = compiledQuery();
+
+            Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
@@ -39,15 +43,19 @@ namespace LinqToImperative.Tests
                 data[i] = random.Next(1000);
             }
 
-            var f = ImperativeQueryableExtensions.Compile<int[], int>
+            var compiledQuery = LinqToImperative.CompileQuery<int[], int>
                 (data => data
                     .AsImperativeQueryable()
                     .Where(i => i % 2 == 0)
                     .Aggregate(0, (acc, elem) => acc + elem));
 
-            var expected = data.Where(i => i % 2 == 0).Aggregate(0, (acc, elem) => acc + elem);
+            var expected = data
+                .Where(i => i % 2 == 0)
+                .Aggregate(0, (acc, elem) => acc + elem);
 
-            Assert.AreEqual(expected, f(data));
+            var actual = compiledQuery(data);
+
+            Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
@@ -55,13 +63,13 @@ namespace LinqToImperative.Tests
         {
             int[] array = Enumerable.Range(0, 100).ToArray();
 
-            static int TestQueryableCall(IQueryable<int> q)
-            {
-                return q.Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(array.AsImperativeQueryable());
+            int actual = array
+                .AsImperativeQueryable()
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -70,15 +78,15 @@ namespace LinqToImperative.Tests
         {
             int[] array = Enumerable.Range(0, 100).ToArray();
 
-            static int TestQueryableCall(IQueryable<int> q)
-            {
-                return q
-                    .Select(i => i * 2)
-                    .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array
+                .Select(i => i * 2)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(array.AsImperativeQueryable());
+            int actual = array
+                .AsImperativeQueryable()
+                .Select(i => i * 2)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -87,15 +95,15 @@ namespace LinqToImperative.Tests
         {
             int[] array = Enumerable.Range(0, 100).ToArray();
 
-            static int TestQueryableCall(IQueryable<int> q)
-            {
-                return q
-                    .Where(i => i % 2 == 0)
-                    .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array
+                .Where(i => i % 2 == 0)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array.AsQueryable());
-            int actual = TestQueryableCall(array.AsImperativeQueryable());
+            int actual = array
+                .AsImperativeQueryable()
+                .Where(i => i % 2 == 0)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -104,15 +112,15 @@ namespace LinqToImperative.Tests
         {
             int[][] array2d = Enumerable.Range(0, 5).Select(i => Enumerable.Range(i, 5).ToArray()).ToArray();
 
-            static int TestQueryableCall(IQueryable<int[]> q)
-            {
-                return q
-                    .SelectMany(i => i)
-                    .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array2d
+                .SelectMany(i => i)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
+            int actual = array2d
+                .AsImperativeQueryable()
+                .SelectMany(i => i)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -121,15 +129,15 @@ namespace LinqToImperative.Tests
         {
             int[][] array2d = Enumerable.Range(0, 5).Select(i => Enumerable.Range(i, 5).ToArray()).ToArray();
 
-            static int TestQueryableCall(IQueryable<int[]> q)
-            {
-                return q
-                    .SelectMany(i => i.Select(i => i + 1))
-                    .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array2d
+                .SelectMany(i => i.Select(i => i + 1))
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
+            int actual = array2d
+                .AsImperativeQueryable()
+                .SelectMany(i => i.Select(i => i + 1))
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -138,17 +146,19 @@ namespace LinqToImperative.Tests
         {
             int[][] array2d = Enumerable.Range(0, 100).Select(i => Enumerable.Range(i, 100).ToArray()).ToArray();
 
-            static int TestQueryableCall(IQueryable<int[]> q)
-            {
-                return q
-                    .SelectMany(i => i)
-                    .Where(i => i % 3 == 0)
-                    .Select(i => i * 4)
-                    .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
-            }
+            int expected = array2d
+                .SelectMany(i => i)
+                .Where(i => i % 3 == 0)
+                .Select(i => i * 4)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
-            int expected = TestQueryableCall(array2d.AsQueryable());
-            int actual = TestQueryableCall(array2d.AsImperativeQueryable());
+            int actual = array2d
+                .AsImperativeQueryable()
+                .SelectMany(i => i)
+                .Where(i => i % 3 == 0)
+                .Select(i => i * 4)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
             Assert.AreEqual(expected, actual);
         }
 
@@ -157,17 +167,23 @@ namespace LinqToImperative.Tests
         {
             int[][] array2d = Enumerable.Range(0, 100).Select(i => Enumerable.Range(i, 100).ToArray()).ToArray();
 
-            static int TestQueryableCall(IQueryable<int[]> q, int x, int y, int z)
-            {
-                return q
-                    .SelectMany(i => i)
-                    .Where(i => i % 3 == 0)
-                    .Select(i => i * 4)
-                    .Aggregate(x, (acc, elem) => (acc + elem * y) % z);
-            }
+            int x = 13;
+            int y = 27;
+            int z = 1000001;
 
-            int expected = TestQueryableCall(array2d.AsQueryable(), 13, 27, 1000001);
-            int actual = TestQueryableCall(array2d.AsImperativeQueryable(), 13, 27, 1000001);
+            int expected = array2d
+                .SelectMany(i => i)
+                .Where(i => i % 3 == 0)
+                .Select(i => i * 4)
+                .Aggregate(x, (acc, elem) => (acc + elem * y) % z);
+
+            int actual = array2d
+                .AsImperativeQueryable()
+                .SelectMany(i => i)
+                .Where(i => i % 3 == 0)
+                .Select(i => i * 4)
+                .Aggregate(x, (acc, elem) => (acc + elem * y) % z);
+
             Assert.AreEqual(expected, actual);
         }
     }

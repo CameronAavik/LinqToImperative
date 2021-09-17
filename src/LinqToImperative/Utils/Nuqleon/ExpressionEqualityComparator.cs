@@ -2,89 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT License.
 // See the LICENSE file in the project root for more information.
 
-// Revision history:
-//
-// BD - April 2013 - Created this file.
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq.Expressions;
-using System.Memory;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace LinqToImperative.Nuqleon
+namespace LinqToImperative.Utils.Nuqleon
 {
-
     /// <summary>
     /// Base class for expression equality comparer implementations. Default behavior matches trees in a structural fashion.
     /// </summary>
     public class ExpressionEqualityComparator
-        : IClearable, IEqualityComparer<Expression>, IEqualityComparer<MemberBinding>, IEqualityComparer<ElementInit>, IEqualityComparer<CatchBlock>, IEqualityComparer<SwitchCase>, IEqualityComparer<CallSiteBinder>
+        : IEqualityComparer<Expression>, IEqualityComparer<MemberBinding>, IEqualityComparer<ElementInit>, IEqualityComparer<CatchBlock>, IEqualityComparer<SwitchCase>, IEqualityComparer<CallSiteBinder>
     {
-        private readonly IEqualityComparer<Type> _typeComparer;
-        private readonly IEqualityComparer<MemberInfo?> _memberInfoComparer;
-        private readonly IEqualityComparer<object?> _constantExpressionValueComparer;
-
-        private readonly IEqualityComparer<CallSiteBinder> _callSiteBinderComparer;
-
         private Stack<IReadOnlyList<ParameterExpression?>>? _environmentLeft;
         private Stack<IReadOnlyList<ParameterExpression?>>? _environmentRight;
-
         private LabelData? _labelData;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExpressionEqualityComparator"/> class.
-        /// Creates a new expression equality comparator with default comparers for types, members, objects, and call site binders.
-        /// </summary>
-        public ExpressionEqualityComparator()
-            : this(EqualityComparer<Type>.Default, EqualityComparer<MemberInfo?>.Default, EqualityComparer<object?>.Default, EqualityComparer<CallSiteBinder>.Default)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExpressionEqualityComparator"/> class.
-        /// Creates a new expression equality comparator with the specified comparers for types, members, and objects.
-        /// </summary>
-        /// <param name="typeComparer">Comparer for types.</param>
-        /// <param name="memberInfoComparer">Comparer for members.</param>
-        /// <param name="constantExpressionValueComparer">Comparer for objects found in constant expression nodes.</param>
-        /// <param name="callSiteBinderComparer">Comparer for callsite binders.</param>
-        public ExpressionEqualityComparator(IEqualityComparer<Type> typeComparer, IEqualityComparer<MemberInfo?> memberInfoComparer, IEqualityComparer<object?> constantExpressionValueComparer, IEqualityComparer<CallSiteBinder> callSiteBinderComparer)
-        {
-            _typeComparer = typeComparer;
-            _memberInfoComparer = memberInfoComparer;
-            _constantExpressionValueComparer = constantExpressionValueComparer;
-            _callSiteBinderComparer = callSiteBinderComparer;
-        }
-
         private Stack<IReadOnlyList<ParameterExpression?>> EnvironmentLeft => _environmentLeft ??= new();
-
         private Stack<IReadOnlyList<ParameterExpression?>> EnvironmentRight => _environmentRight ??= new();
-
         private LabelData BranchTrackingData => _labelData ??= new();
-
-        /// <summary>
-        /// Checks if any undefined labels were detected.
-        /// </summary>
-        public bool HasUndefinedLabels => _labelData?.HasUndefinedLabels ?? false;
-
-        /// <summary>
-        /// Checks if any usage of labels was detected.
-        /// </summary>
-        public bool HasLabels => _labelData?.HasLabels ?? false;
-
-        /// <summary>
-        /// Clears the internal data structures to enable reuse of the instance.
-        /// </summary>
-        public void Clear()
-        {
-            _environmentLeft?.Clear();
-            _environmentRight?.Clear();
-            _labelData?.Clear();
-        }
-
 
         /// <summary>
         /// Checks whether the two given expressions are equal.
@@ -288,20 +227,8 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsBinary(BinaryExpression x, BinaryExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Method, y.Method) &&
-                Equals(x.IsLifted, y.IsLifted) &&
-                Equals(x.IsLiftedToNull, y.IsLiftedToNull) &&
                 Equals(x.Left, y.Left) &&
                 Equals(x.Right, y.Right) &&
                 Equals(x.Conversion, y.Conversion);
@@ -315,16 +242,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsConditional(ConditionalExpression x, ConditionalExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Test, y.Test) &&
                 Equals(x.IfTrue, y.IfTrue) &&
@@ -339,16 +256,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsConstant(ConstantExpression x, ConstantExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Type, y.Type) &&
                 EqualsConstant(x.Value, y.Value);
@@ -362,16 +269,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsInvocation(InvocationExpression x, InvocationExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Expression, y.Expression) &&
                 Equals(x.Arguments, y.Arguments);
@@ -385,16 +282,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsLambda(LambdaExpression x, LambdaExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             if (x.Parameters.Count != y.Parameters.Count)
             {
                 return false;
@@ -421,16 +308,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsListInit(ListInitExpression x, ListInitExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.NewExpression, y.NewExpression) &&
                 Equals(x.Initializers, y.Initializers);
@@ -444,16 +321,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsMember(MemberExpression x, MemberExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Member, y.Member) &&
                 Equals(x.Expression, y.Expression);
@@ -467,16 +334,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsMemberInit(MemberInitExpression x, MemberInitExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.NewExpression, y.NewExpression) &&
                 Equals(x.Bindings, y.Bindings);
@@ -490,24 +347,11 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsMethodCall(MethodCallExpression x, MethodCallExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Method, y.Method) &&
                 Equals(x.Object, y.Object) &&
                 Equals(x.Arguments, y.Arguments);
         }
-
-#pragma warning disable IDE0079 // Remove unnecessary suppression.
-#pragma warning disable CA1711 // Replace New suffix. (Name of expression tree node.)
 
         /// <summary>
         /// Checks whether the two given expressions are equal.
@@ -517,25 +361,12 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsNew(NewExpression x, NewExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Type, y.Type) && // Constructor can be null
                 Equals(x.Constructor, y.Constructor) &&
                 Equals(x.Arguments, y.Arguments) &&
                 Equals(x.Members, y.Members);
         }
-
-#pragma warning restore CA1711
-#pragma warning restore IDE0079
 
         /// <summary>
         /// Checks whether the two given expressions are equal.
@@ -545,16 +376,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsNewArray(NewArrayExpression x, NewArrayExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Type, y.Type) &&
                 Equals(x.Expressions, y.Expressions);
@@ -568,16 +389,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsParameter(ParameterExpression x, ParameterExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             var l = Find(x, EnvironmentLeft);
             var r = Find(y, EnvironmentRight);
 
@@ -614,16 +425,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsTypeBinary(TypeBinaryExpression x, TypeBinaryExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.TypeOperand, y.TypeOperand) &&
                 Equals(x.Expression, y.Expression);
@@ -637,16 +438,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsUnary(UnaryExpression x, UnaryExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             switch (x.NodeType)
             {
                 case ExpressionType.Convert:
@@ -663,8 +454,6 @@ namespace LinqToImperative.Nuqleon
 
             return
                 Equals(x.Method, y.Method) &&
-                Equals(x.IsLifted, y.IsLifted) &&
-                Equals(x.IsLiftedToNull, y.IsLiftedToNull) &&
                 Equals(x.Operand, y.Operand);
         }
 
@@ -676,16 +465,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsBlock(BlockExpression x, BlockExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             if (x.Variables.Count != y.Variables.Count)
             {
                 return false;
@@ -721,18 +500,7 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsDefault(DefaultExpression x, DefaultExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
-            return
-                Equals(x.Type, y.Type);
+            return Equals(x.Type, y.Type);
         }
 
         /// <summary>
@@ -743,16 +511,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsDynamic(DynamicExpression x, DynamicExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Type, y.Type) &&
                 Equals(x.DelegateType, y.DelegateType) &&
@@ -768,16 +526,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsGoto(GotoExpression x, GotoExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 GotoLabelAndCheck(x.Target, y.Target) &&
                 Equals(x.Kind, y.Kind) &&
@@ -792,16 +540,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsIndex(IndexExpression x, IndexExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Indexer, y.Indexer) &&
                 Equals(x.Object, y.Object) &&
@@ -816,16 +554,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsLabel(LabelExpression x, LabelExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 DefineLabelAndCheck(x.Target, y.Target) &&
                 Equals(x.DefaultValue, y.DefaultValue);
@@ -839,16 +567,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsLoop(LoopExpression x, LoopExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 DefineLabelAndCheck(x.BreakLabel, y.BreakLabel) &&
                 DefineLabelAndCheck(x.ContinueLabel, y.ContinueLabel) &&
@@ -863,16 +581,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsRuntimeVariables(RuntimeVariablesExpression x, RuntimeVariablesExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return Equals(x.Variables, y.Variables);
         }
 
@@ -884,16 +592,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsSwitch(SwitchExpression x, SwitchExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.SwitchValue, y.SwitchValue) &&
                 Equals(x.Comparison, y.Comparison) &&
@@ -909,16 +607,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both expressions are equal; otherwise, false.</returns>
         protected virtual bool EqualsTry(TryExpression x, TryExpression y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Body, y.Body) &&
                 Equals(x.Handlers, y.Handlers) &&
@@ -987,7 +675,7 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both call site binders are equal; otherwise, false.</returns>
         public virtual bool Equals(CallSiteBinder? x, CallSiteBinder? y)
         {
-            return _callSiteBinderComparer.Equals(x, y);
+            return EqualityComparer<CallSiteBinder>.Default.Equals(x, y);
         }
 
         /// <summary>
@@ -1050,16 +738,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both member assignments are equal; otherwise, false.</returns>
         protected virtual bool EqualsMemberAssignment(MemberAssignment x, MemberAssignment y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Member, y.Member) &&
                 Equals(x.Expression, y.Expression);
@@ -1073,16 +751,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both nested member bindings are equal; otherwise, false.</returns>
         protected virtual bool EqualsMemberMemberBinding(MemberMemberBinding x, MemberMemberBinding y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Member, y.Member) &&
                 Equals(x.Bindings, y.Bindings);
@@ -1096,16 +764,6 @@ namespace LinqToImperative.Nuqleon
         /// <returns>true if both member list bindings are equal; otherwise, false.</returns>
         protected virtual bool EqualsMemberListBinding(MemberListBinding x, MemberListBinding y)
         {
-            if (x == null && y == null)
-            {
-                return true;
-            }
-
-            if (x == null || y == null)
-            {
-                return false;
-            }
-
             return
                 Equals(x.Member, y.Member) &&
                 Equals(x.Initializers, y.Initializers);
@@ -1140,7 +798,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="x">First member.</param>
         /// <param name="y">Second member.</param>
         /// <returns>true if both members are equal; otherwise, false.</returns>
-        protected bool Equals(MemberInfo? x, MemberInfo? y) => _memberInfoComparer.Equals(x, y);
+        protected bool Equals(MemberInfo? x, MemberInfo? y) => EqualityComparer<MemberInfo?>.Default.Equals(x, y);
 
         /// <summary>
         /// Checks whether the two given member sequences are equal.
@@ -1148,7 +806,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="x">First member sequence.</param>
         /// <param name="y">Second member sequence.</param>
         /// <returns>true if both member sequences are equal; otherwise, false.</returns>
-        protected bool Equals(ReadOnlyCollection<MemberInfo>? x, ReadOnlyCollection<MemberInfo>? y) => SequenceEqual(x, y, _memberInfoComparer);
+        protected bool Equals(ReadOnlyCollection<MemberInfo>? x, ReadOnlyCollection<MemberInfo>? y) => SequenceEqual(x, y, EqualityComparer<MemberInfo?>.Default);
 
         /// <summary>
         /// Checks whether the two given types are equal.
@@ -1156,11 +814,11 @@ namespace LinqToImperative.Nuqleon
         /// <param name="x">First type.</param>
         /// <param name="y">Second type.</param>
         /// <returns>true if both types are equal; otherwise, false.</returns>
-        protected bool Equals(Type x, Type y) => _typeComparer.Equals(x, y);
+        protected bool Equals(Type x, Type y) => EqualityComparer<Type>.Default.Equals(x, y);
 
         private static bool Equals(bool x, bool y) => x == y;
 
-        private bool EqualsConstant(object? x, object? y) => _constantExpressionValueComparer.Equals(x, y);
+        private bool EqualsConstant(object? x, object? y) => EqualityComparer<object?>.Default.Equals(x, y);
 
         /// <summary>
         /// Checks whether the two given expression sequences are equal.
@@ -1335,15 +993,12 @@ namespace LinqToImperative.Nuqleon
             var scope = 0;
             foreach (var frame in parameters)
             {
-                var index = 0;
-                for (int i = 0, n = frame.Count; i < n; i++)
+                for (int i = 0; i < frame.Count; i++)
                 {
                     if (frame[i] == p)
                     {
-                        return new ParameterIndex { Scope = scope, Index = index };
+                        return new ParameterIndex { Scope = scope, Index = i };
                     }
-
-                    index++;
                 }
 
                 scope++;
@@ -1357,9 +1012,6 @@ namespace LinqToImperative.Nuqleon
             public int Scope;
             public int Index;
         }
-
-
-
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1470,16 +1122,12 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeBinary(BinaryExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NodeType),
                 GetHashCode(obj.Left),
                 GetHashCode(obj.Right),
-                Hash(
-                    GetHashCode(obj.Conversion),
-                    GetHashCode(obj.Method),
-                    GetHashCode(obj.IsLifted),
-                    GetHashCode(obj.IsLiftedToNull)
-                )
+                GetHashCode(obj.Conversion),
+                GetHashCode(obj.Method)
             );
 
         /// <summary>
@@ -1488,7 +1136,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeConditional(ConditionalExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Test),
                 GetHashCode(obj.IfTrue),
                 GetHashCode(obj.IfFalse)
@@ -1500,7 +1148,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeConstant(ConstantExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Type),
                 GetHashCodeConstant(obj.Value)
             );
@@ -1511,7 +1159,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeInvocation(InvocationExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Expression),
                 GetHashCode(obj.Arguments)
             );
@@ -1523,19 +1171,13 @@ namespace LinqToImperative.Nuqleon
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeLambda(LambdaExpression obj)
         {
-            if (obj == null)
-            {
-                return 17;
-            }
-
             GetHashCodePush(obj.Parameters);
 
-            var res = Hash(
+            var res = HashCode.Combine(
                 GetHashCode(obj.Body),
-                GetHashCode(obj.Type)
+                GetHashCode(obj.Type),
+                obj.TailCall.GetHashCode()
             );
-
-            res = Hash(res, obj.TailCall.GetHashCode());
 
             GetHashCodePop();
 
@@ -1548,7 +1190,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeListInit(ListInitExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NewExpression),
                 GetHashCode(obj.Initializers)
             );
@@ -1559,7 +1201,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeMember(MemberExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Expression),
                 GetHashCode(obj.Member)
             );
@@ -1570,7 +1212,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeMemberInit(MemberInitExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NewExpression),
                 GetHashCode(obj.Bindings)
             );
@@ -1581,14 +1223,11 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeMethodCall(MethodCallExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Object),
                 GetHashCode(obj.Method),
                 GetHashCode(obj.Arguments)
             );
-
-#pragma warning disable IDE0079 // Remove unnecessary suppression.
-#pragma warning disable CA1711 // Replace New suffix. (Name of expression tree node.)
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1596,15 +1235,12 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeNew(NewExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Type),
                 GetHashCode(obj.Constructor),
                 GetHashCode(obj.Arguments),
                 GetHashCode(obj.Members)
             );
-
-#pragma warning restore CA1711
-#pragma warning restore IDE0079
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1612,7 +1248,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeNewArray(NewArrayExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NodeType),
                 GetHashCode(obj.Type),
                 GetHashCode(obj.Expressions)
@@ -1625,15 +1261,10 @@ namespace LinqToImperative.Nuqleon
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeParameter(ParameterExpression obj)
         {
-            if (obj == null)
-            {
-                return 17;
-            }
-
             var i = 0;
             foreach (var frame in EnvironmentLeft)
             {
-                for (int j = 0, n = frame.Count; j < n; j++)
+                for (int j = 0; j < frame.Count; j++)
                 {
                     if (frame[j] == obj)
                     {
@@ -1653,7 +1284,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeGlobalParameter(ParameterExpression obj) =>
-            obj == null ? 17 : obj.GetHashCode();
+            obj.GetHashCode();
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1661,7 +1292,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeTypeBinary(TypeBinaryExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NodeType),
                 GetHashCode(obj.Expression),
                 GetHashCode(obj.TypeOperand)
@@ -1673,15 +1304,10 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeUnary(UnaryExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.NodeType),
                 GetHashCode(obj.Operand),
-                Hash(
-                    GetHashCode(obj.Method),
-                    obj.IsLifted.GetHashCode(),
-                    obj.IsLiftedToNull.GetHashCode()
-                )
-            );
+                GetHashCode(obj.Method));
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1690,14 +1316,9 @@ namespace LinqToImperative.Nuqleon
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeBlock(BlockExpression obj)
         {
-            if (obj == null)
-            {
-                return 17;
-            }
-
             GetHashCodePush(obj.Variables);
 
-            var res = Hash(
+            var res = HashCode.Combine(
                 GetHashCode(obj.Expressions),
                 GetHashCode(obj.Type)
             );
@@ -1723,7 +1344,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeDefault(DefaultExpression obj) =>
-            obj == null ? 17 : GetHashCode(obj.Type);
+            GetHashCode(obj.Type);
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1731,7 +1352,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeDynamic(DynamicExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Arguments),
                 GetHashCode(obj.Type),
                 GetHashCode(obj.DelegateType),
@@ -1744,7 +1365,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeGoto(GotoExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Value),
                 GetHashCode(obj.Target),
                 (int)obj.Kind
@@ -1756,7 +1377,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeIndex(IndexExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Object),
                 GetHashCode(obj.Indexer),
                 GetHashCode(obj.Arguments)
@@ -1768,7 +1389,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeLabel(LabelExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.DefaultValue),
                 GetHashCode(obj.Target)
             );
@@ -1779,7 +1400,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeLoop(LoopExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.ContinueLabel),
                 GetHashCode(obj.BreakLabel),
                 GetHashCode(obj.Body)
@@ -1799,7 +1420,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeRuntimeVariables(RuntimeVariablesExpression obj) =>
-            obj == null ? 17 : GetHashCode(obj.Variables);
+            GetHashCode(obj.Variables);
 
         /// <summary>
         /// Gets a hash code for the given expression.
@@ -1807,7 +1428,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeSwitch(SwitchExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.SwitchValue),
                 GetHashCode(obj.Comparison),
                 GetHashCode(obj.Cases),
@@ -1820,7 +1441,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Expression to compute a hash code for.</param>
         /// <returns>Hash code for the given expression.</returns>
         protected virtual int GetHashCodeTry(TryExpression obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Body),
                 GetHashCode(obj.Handlers),
                 GetHashCode(obj.Fault),
@@ -1833,7 +1454,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Switch case to compute a hash code for.</param>
         /// <returns>Hash code for the given switch case.</returns>
         public virtual int GetHashCode(SwitchCase obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.TestValues),
                 GetHashCode(obj.Body)
             );
@@ -1845,14 +1466,9 @@ namespace LinqToImperative.Nuqleon
         /// <returns>Hash code for the given catch block.</returns>
         public virtual int GetHashCode(CatchBlock obj)
         {
-            if (obj == null)
-            {
-                return 17;
-            }
-
             GetHashCodePush(new[] { obj.Variable });
 
-            var res = Hash(
+            var res = HashCode.Combine(
                 GetHashCode(obj.Body),
                 GetHashCode(obj.Test),
                 GetHashCode(obj.Filter)
@@ -1868,7 +1484,7 @@ namespace LinqToImperative.Nuqleon
         /// </summary>
         /// <param name="obj">Call site binder to compute a hash code for.</param>
         /// <returns>Hash code for the given call site binder.</returns>
-        public virtual int GetHashCode(CallSiteBinder obj) => _callSiteBinderComparer.GetHashCode(obj);
+        public virtual int GetHashCode(CallSiteBinder obj) => EqualityComparer<CallSiteBinder>.Default.GetHashCode(obj);
 
         /// <summary>
         /// Gets a hash code for the given extension expression.
@@ -1887,29 +1503,24 @@ namespace LinqToImperative.Nuqleon
         /// <returns>Hash code for the given member binding.</returns>
         public virtual int GetHashCode(MemberBinding obj)
         {
-            var res = 17;
+            var hashCode = new HashCode();
 
-            if (obj == null)
-            {
-                return res;
-            }
-
-            res = Hash(res, (int)obj.BindingType);
+            hashCode.Add((int)obj.BindingType);
 
             switch (obj.BindingType)
             {
                 case MemberBindingType.Assignment:
-                    res = Hash(res, GetHashCodeMemberAssignment((MemberAssignment)obj));
+                    hashCode.Add(GetHashCodeMemberAssignment((MemberAssignment)obj));
                     break;
                 case MemberBindingType.ListBinding:
-                    res = Hash(res, GetHashCodeMemberListBinding((MemberListBinding)obj));
+                    hashCode.Add(GetHashCodeMemberListBinding((MemberListBinding)obj));
                     break;
                 case MemberBindingType.MemberBinding:
-                    res = Hash(res, GetHashCodeMemberMemberBinding((MemberMemberBinding)obj));
+                    hashCode.Add(GetHashCodeMemberMemberBinding((MemberMemberBinding)obj));
                     break;
             }
 
-            return res;
+            return hashCode.ToHashCode();
         }
 
         /// <summary>
@@ -1918,7 +1529,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Member assignment to compute a hash code for.</param>
         /// <returns>Hash code for the given member assignment.</returns>
         protected virtual int GetHashCodeMemberAssignment(MemberAssignment obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Member),
                 GetHashCode(obj.Expression)
             );
@@ -1929,7 +1540,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Deep member binding to compute a hash code for.</param>
         /// <returns>Hash code for the given deep member binding.</returns>
         protected virtual int GetHashCodeMemberMemberBinding(MemberMemberBinding obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Member),
                 GetHashCode(obj.Bindings)
             );
@@ -1940,7 +1551,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Member list binding to compute a hash code for.</param>
         /// <returns>Hash code for the given member list binding.</returns>
         protected virtual int GetHashCodeMemberListBinding(MemberListBinding obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.Member),
                 GetHashCode(obj.Initializers)
             );
@@ -1951,7 +1562,7 @@ namespace LinqToImperative.Nuqleon
         /// <param name="obj">Element initializer to compute a hash code for.</param>
         /// <returns>Hash code for the given element initializer.</returns>
         public virtual int GetHashCode(ElementInit obj) =>
-            obj == null ? 17 : Hash(
+            HashCode.Combine(
                 GetHashCode(obj.AddMethod),
                 GetHashCode(obj.Arguments)
             );
@@ -1961,7 +1572,7 @@ namespace LinqToImperative.Nuqleon
         /// </summary>
         /// <param name="obj">Member to compute a hash code for.</param>
         /// <returns>Hash code for the given member.</returns>
-        protected int GetHashCode(MemberInfo? obj) => _memberInfoComparer.GetHashCode(obj!);
+        protected int GetHashCode(MemberInfo? obj) => EqualityComparer<MemberInfo?>.Default.GetHashCode(obj!);
 
         /// <summary>
         /// Gets a hash code for the given member sequence.
@@ -1972,17 +1583,17 @@ namespace LinqToImperative.Nuqleon
         {
             unchecked
             {
-                var h = 17;
+                var hashCode = new HashCode();
 
                 if (obj != null)
                 {
                     for (int i = 0, n = obj.Count; i < n; i++)
                     {
-                        h = h * 23 + GetHashCode(obj[i]);
+                        hashCode.Add(GetHashCode(obj[i]));
                     }
                 }
 
-                return h;
+                return hashCode.ToHashCode();
             }
         }
 
@@ -1991,7 +1602,7 @@ namespace LinqToImperative.Nuqleon
         /// </summary>
         /// <param name="obj">Type to compute a hash code for.</param>
         /// <returns>Hash code for the given type.</returns>
-        protected int GetHashCode(Type obj) => _typeComparer.GetHashCode(obj);
+        protected int GetHashCode(Type obj) => EqualityComparer<Type>.Default.GetHashCode(obj);
 
         /// <summary>
         /// Push parameters into the expression environment for hash code computation.
@@ -2006,9 +1617,7 @@ namespace LinqToImperative.Nuqleon
 
         private static int GetHashCode(ExpressionType obj) => (int)obj;
 
-        private static int GetHashCode(bool obj) => obj.GetHashCode();
-
-        private int GetHashCodeConstant(object? obj) => _constantExpressionValueComparer.GetHashCode(obj!);
+        private int GetHashCodeConstant(object? obj) => EqualityComparer<object?>.Default.GetHashCode(obj!);
 
 
         /// <summary>
@@ -2020,12 +1629,9 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var expression in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(expression));
             }
 
             return h.ToHashCode();
@@ -2040,12 +1646,9 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var param in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(param));
             }
 
             return h.ToHashCode();
@@ -2060,12 +1663,9 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var member in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(member));
             }
 
             return h.ToHashCode();
@@ -2080,12 +1680,9 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var elementInit in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(elementInit));
             }
 
             return h.ToHashCode();
@@ -2100,12 +1697,9 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var switchCase in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(switchCase));
             }
 
             return h.ToHashCode();
@@ -2120,54 +1714,15 @@ namespace LinqToImperative.Nuqleon
         {
             HashCode h = default;
 
-            if (obj != null)
+            foreach (var catchBlock in obj)
             {
-                for (int i = 0, n = obj.Count; i < n; i++)
-                {
-                    h.Add(GetHashCode(obj[i]));
-                }
+                h.Add(GetHashCode(catchBlock));
             }
 
             return h.ToHashCode();
         }
 
-        /// <summary>
-        /// Helper method to create a hash code from the specified values.
-        /// </summary>
-        /// <param name="a">First value.</param>
-        /// <param name="b">Second value.</param>
-        /// <returns>Hash code composed from the specified values.</returns>
-        protected static int Hash(int a, int b)
-        {
-            return HashCode.Combine(a, b);
-        }
-
-        /// <summary>
-        /// Helper method to create a hash code from the specified values.
-        /// </summary>
-        /// <param name="a">First value.</param>
-        /// <param name="b">Second value.</param>
-        /// <param name="c">Third value.</param>
-        /// <returns>Hash code composed from the specified values.</returns>
-        protected static int Hash(int a, int b, int c)
-        {
-            return HashCode.Combine(a, b, c);
-        }
-
-        /// <summary>
-        /// Helper method to create a hash code from the specified values.
-        /// </summary>
-        /// <param name="a">First value.</param>
-        /// <param name="b">Second value.</param>
-        /// <param name="c">Third value.</param>
-        /// <param name="d">Fourth value.</param>
-        /// <returns>Hash code composed from the specified values.</returns>
-        protected static int Hash(int a, int b, int c, int d)
-        {
-            return HashCode.Combine(a, b, c, d);
-        }
-
-        private sealed class LabelData : IClearable
+        private sealed class LabelData
         {
             public Dictionary<LabelTarget, HashSet<LabelTarget>> DefinitionsLeft { get; } = new();
 
@@ -2176,48 +1731,6 @@ namespace LinqToImperative.Nuqleon
             public Dictionary<LabelTarget, HashSet<LabelTarget>> GotosLeft { get; } = new();
 
             public Dictionary<LabelTarget, HashSet<LabelTarget>> GotosRight { get; } = new();
-
-            public bool HasUndefinedLabels
-            {
-                get
-                {
-                    return Core(DefinitionsLeft, GotosLeft) || Core(DefinitionsRight, GotosRight);
-
-                    static bool Core(Dictionary<LabelTarget, HashSet<LabelTarget>> definitions, Dictionary<LabelTarget, HashSet<LabelTarget>> gotos)
-                    {
-                        foreach (var kv in gotos)
-                        {
-                            if (!definitions.ContainsKey(kv.Key))
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-                }
-            }
-
-            public bool HasLabels
-            {
-                get
-                {
-                    return Core(DefinitionsLeft, GotosLeft) || Core(DefinitionsRight, GotosRight);
-
-                    static bool Core(Dictionary<LabelTarget, HashSet<LabelTarget>> definitions, Dictionary<LabelTarget, HashSet<LabelTarget>> gotos)
-                    {
-                        return definitions.Count > 0 || gotos.Count > 0;
-                    }
-                }
-            }
-
-            public void Clear()
-            {
-                DefinitionsLeft.Clear();
-                DefinitionsRight.Clear();
-                GotosLeft.Clear();
-                GotosRight.Clear();
-            }
         }
     }
 }

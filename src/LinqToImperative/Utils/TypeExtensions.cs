@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 
-namespace LinqToImperative.Internal
+namespace LinqToImperative.Utils
 {
     /// <summary>
     /// Helper class for doing things with types.
     /// </summary>
-    public static class TypeHelpers
+    internal static class TypeExtensions
     {
         /// <summary>
         /// Returns the T from the first <see cref="IEnumerable{T}"/> interface that is implemented by the provided type.
         /// </summary>
         /// <param name="type">The type to get the element type from.</param>
         /// <returns>The element type.</returns>
-        internal static Type GetIEnumerableElementType(this Type type)
+        public static Type GetIEnumerableElementType(this Type type)
         {
             if (type.IsArray)
             {

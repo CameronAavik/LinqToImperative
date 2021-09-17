@@ -1,77 +1,39 @@
+﻿using LinqToImperative.ExprEnumerable;
+using LinqToImperative.Expressions;
+using LinqToImperative.QueryCompilation;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
-using LinqToImperative.Internal;
 
 namespace LinqToImperative
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     /// <summary>
-    /// A class for creating <see cref="ImperativeQueryable{T}"/>s.
+    /// Extensions for ImperativeQueryable
     /// </summary>
     public static class ImperativeQueryableExtensions
     {
-        /// <summary>
-        /// Creates a compiled function that when invoked will execute the query.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the query result.</typeparam>
-        /// <param name="query">The query to compile.</param>
-        /// <returns>The compiled query as a function.</returns>
-        public static Func<TResult> Compile<TResult>(Expression<Func<TResult>> query)
-        {
-            var executor = new QueryExecutor();
-            return executor.Compile<TResult>(query.Body);
-        }
+        public static TRet Aggregate<T, TRet>(this ImperativeQueryable<T> source, TRet seed, Expression<Func<TRet, T, TRet>> func) =>
+            source.GetEnumerable().Aggregate(func, Expression.Constant(seed)).CompileAndExecute<TRet>();
 
-        /// <summary>
-        /// Creates a compiled function that when invoked will execute the query.
-        /// </summary>
-        /// <typeparam name="TParam1">The type of the first parameter.</typeparam>
-        /// <typeparam name="TResult">The type of the query result.</typeparam>
-        /// <param name="query">The query to compile.</param>
-        /// <returns>The compiled query as a function.</returns>
-        public static Func<TParam1, TResult> Compile<TParam1, TResult>(Expression<Func<TParam1, TResult>> query)
-        {
-            var executor = new QueryExecutor();
-            return executor.Compile<TParam1, TResult>(query.Body, query.Parameters[0]);
-        }
+        public static ImperativeQueryable<T2> SelectMany<T1, T2>(this ImperativeQueryable<T1> source, Expression<Func<T1, IEnumerable<T2>>> selector) =>
+            source.GetEnumerable().SelectMany(selector).ToImperativeQueryable<T2>();
 
-        /// <summary>
-        /// Creates an <see cref="ImperativeQueryable{T}"/> from an array.
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="arr">The array.</param>
-        /// <returns>The queryable object.</returns>
-        public static ImperativeQueryable<T> AsImperativeQueryable<T>(this T[] arr)
-        {
-            var arrExpr = new EnumerableSourceExpression(Expression.Constant(arr));
-            var expression = EnumerableExpressionExtensions.OfArray(arrExpr, typeof(T));
-            return Create<T>(expression);
-        }
+        public static ImperativeQueryable<T2> Select<T1, T2>(this ImperativeQueryable<T1> source, Expression<Func<T1, T2>> selector) =>
+            source.GetEnumerable().Select(selector).ToImperativeQueryable<T2>();
 
-        /// <summary>
-        /// Creates an <see cref="ImperativeQueryable{T}"/> from an <see cref="IEnumerable{T}"/>.
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The enumerable.</param>
-        /// <returns>The queryable object.</returns>
-        public static ImperativeQueryable<T> AsImperativeQueryable<T>(this IEnumerable<T> enumerable)
-        {
-            var enumerableExpr = new EnumerableSourceExpression(Expression.Constant(enumerable));
-            var expression = EnumerableExpressionExtensions.OfEnumerable(enumerableExpr, typeof(T));
-            return Create<T>(expression);
-        }
+        public static ImperativeQueryable<T> Where<T>(this ImperativeQueryable<T> source, Expression<Func<T, bool>> predicate) =>
+            source.GetEnumerable().Where(predicate).ToImperativeQueryable<T>();
 
-        /// <summary>
-        /// Creates an <see cref="ImperativeQueryable{T}"/> from an enumerable expression.
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="expression">The enumerable expression.</param>
-        /// <returns>The queryable object.</returns>
-        private static ImperativeQueryable<T> Create<T>(EnumerableExpression expression)
-        {
-            var executor = new QueryExecutor();
-            var provider = new ImperativeQueryProvider(executor);
-            return new ImperativeQueryable<T>(provider, expression);
-        }
+        private static IExprEnumerable GetEnumerable<T>(this ImperativeQueryable<T> source) =>
+            ((EnumerableExpression)source.Expression).Enumerable;
+        
+        private static T CompileAndExecute<T>(this Expression expression) =>
+            QueryCompiler.Instance.Compile(Expression.Lambda<Func<T>>(expression, null)).Invoke();
+
+        private static ImperativeQueryable<T> ToImperativeQueryable<T>(this IExprEnumerable enumerable) =>
+            ImperativeQueryable<T>.Create(enumerable);
     }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

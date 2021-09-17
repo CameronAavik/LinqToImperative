@@ -1,0 +1,5 @@
+root = true
+
+[*.cs]
+# Disabled because of analyzer bug https://github.com/dotnet/roslyn-analyzers/issues/5450
+dotnet_diagnostic.CA2252.severity=none
