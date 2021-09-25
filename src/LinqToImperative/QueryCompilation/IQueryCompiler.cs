@@ -1,4 +1,6 @@
+using LinqToImperative.QueryTree;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace LinqToImperative.QueryCompilation
@@ -15,5 +17,6 @@ namespace LinqToImperative.QueryCompilation
         /// <param name="lambdaExpression">The lambda expression to compile.</param>
         /// <returns>The compiled expression as a function.</returns>
         TFunc Compile<TFunc>(Expression<TFunc> lambdaExpression) where TFunc : Delegate;
+        T ExecuteQuery<T>(IQuery<T> queryResult, IReadOnlyList<ContextParameter> contextParameters);
     }
 }

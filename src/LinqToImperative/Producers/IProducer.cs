@@ -33,5 +33,12 @@ namespace LinqToImperative.Producers
         /// <param name="continuation">A function that takes in an expression</param>
         /// <returns></returns>
         public Expression MoveNext(Func<ParameterExpression, Expression> continuation);
+
+        /// <summary>
+        /// Visit any child expressions in the producer.
+        /// </summary>
+        /// <param name="visitor">The expression visitor.</param>
+        /// <returns>The visited producer.</returns>
+        public IProducer VisitChildren(ExpressionVisitor visitor);
     }
 }

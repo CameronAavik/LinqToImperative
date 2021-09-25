@@ -73,6 +73,14 @@ namespace LinqToImperative.ExprEnumerable
 
                 return baseProducer.MoveNext(Inner);
             }
+
+            /// <inheritdoc/>
+            public IProducer VisitChildren(ExpressionVisitor visitor)
+            {
+                var newBaseProducer = baseProducer.VisitChildren(visitor);
+                var newSelector = (LambdaExpression)visitor.Visit(selector);
+                return newBaseProducer == baseProducer && newSelector == selector ? this : new SelectProducer(newBaseProducer, newSelector);
+            }
         }
 
         /// <summary>
@@ -106,6 +114,16 @@ namespace LinqToImperative.ExprEnumerable
             public IExprEnumerable GetNested(ParameterExpression parameter)
             {
                 return baseNestedEnumerable.GetNested(parameter).Select(selector);
+            }
+
+            /// <inheritdoc/>
+            public IExprEnumerable VisitChildren(ExpressionVisitor visitor)
+            {
+                var newNestedEnumerable = (INestedExprEnumerable)baseNestedEnumerable.VisitChildren(visitor);
+                var newSelector = (LambdaExpression)visitor.Visit(selector);
+                return newNestedEnumerable == baseNestedEnumerable && newSelector == selector
+                    ? this
+                    : new SelectNestedExprEnumerable(newNestedEnumerable, newSelector);
             }
         }
     }

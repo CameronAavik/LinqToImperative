@@ -1,6 +1,8 @@
-using LinqToImperative.Utils.Nuqleon;
+using LinqToImperative.QueryTree;
+using LinqToImperative.Utils;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
@@ -11,48 +13,147 @@ namespace LinqToImperative.QueryCompilation
     /// </summary>
     internal class QueryCompiler : IQueryCompiler
     {
-        private static readonly ConcurrentDictionary<LambdaExpression, Delegate> Cache = new(new ExpressionEqualityComparer());
+        private static readonly ConcurrentDictionary<CompiledQueryCacheKey, Delegate> Cache = new();
 
-        /// <summary>
-        /// Singleton instance of the Query Compiler
-        /// </summary>
-        public static QueryCompiler Instance = new();
+        public static readonly QueryCompiler Instance = new();
 
         /// <inheritdoc/>
-        public TFunc Compile<TFunc>(Expression<TFunc> expr) where TFunc : Delegate
+        public TDelegate Compile<TDelegate>(Expression<TDelegate> expr) where TDelegate : Delegate
         {
-            var visitor = new QueryTranslationVisitor();
-            var translatedExpr = visitor.Visit(expr);
+            var visitor = new QueryRewritingExpressionVisitor();
+            var translatedExpr = (Expression<TDelegate>)visitor.Visit(expr);
+            return translatedExpr.Compile();
+        }
 
-            var n = visitor.Parameters.Count + visitor.EnumerableSourceParameters.Count;
+        public T ExecuteQuery<T>(IQuery<T> queryResult, IReadOnlyList<ContextParameter> contextParameters)
+        {
+            var cacheKey = new CompiledQueryCacheKey(queryResult, contextParameters);
+            var func = Cache.GetOrAdd(cacheKey, k => Compile(k.Query, k.Parameters));
 
-            if (n == 0)
+            var n = contextParameters.Count;
+            switch (n)
             {
-                return (TFunc)Cache.GetOrAdd((LambdaExpression)translatedExpr, l => l.Compile());
+                case 0:
+                    return ((Func<T>)func)();
+                case 1:
+                    return ((Func<object?, T>)func)(contextParameters[0].Value);
+                case 2:
+                    return ((Func<object?, object?, T>)func)(contextParameters[0].Value, contextParameters[1].Value);
+                case 3:
+                    return ((Func<object?, object?, object?, T>)func)(contextParameters[0].Value, contextParameters[1].Value, contextParameters[2].Value);
+                default:
+                    {
+                        // We use ReadOnlyCollectionBuilder to prevent Expression.Lambda from allocating and copying the parameters
+                        var values = new object?[n];
+
+                        for (int i = 0; i < contextParameters.Count; i++)
+                            values[i] = contextParameters[i].Value;
+
+                        return ((Func<object?[], T>)func)(values);
+                    }
+            }
+        }
+
+        private static Delegate Compile(IQuery query, IReadOnlyList<ContextParameter> parameters)
+        {
+            var visitor = new QueryRewritingExpressionVisitor();
+            var queryExpressionTree = query.VisitQuery(visitor);
+
+            var paramsCount = parameters.Count;
+            LambdaExpression lambdaToCompile;
+            if (paramsCount == 0)
+            {
+                lambdaToCompile = Expression.Lambda(queryExpressionTree, null);
+            }
+            else if (paramsCount < 4)
+            {
+                var lambdaParams = new ReadOnlyCollectionBuilder<ParameterExpression>(paramsCount);
+                var bodyVariables = new ReadOnlyCollectionBuilder<ParameterExpression>(parameters.Count);
+                var bodyExpressions = new ReadOnlyCollectionBuilder<Expression>(parameters.Count + 1);
+
+                foreach (var contextParameter in parameters)
+                {
+                    var lambdaParam = Expression.Parameter(typeof(object), "param");
+                    lambdaParams.Add(lambdaParam);
+
+                    var parameter = contextParameter.Parameter;
+                    bodyVariables.Add(parameter);
+                    bodyExpressions.Add(Expression.Assign(parameter, Expression.Convert(lambdaParam, parameter.Type)));
+                }
+
+                bodyExpressions.Add(queryExpressionTree);
+                lambdaToCompile = Expression.Lambda(Expression.Block(bodyVariables, bodyExpressions), lambdaParams);
             }
             else
             {
-                // We use ReadOnlyCollectionBuilder to prevent Expression.Lambda from allocating and copying the parameters
-                var parameterCollection = new ReadOnlyCollectionBuilder<ParameterExpression>(n);
-                var values = new object?[n];
+                var paramsArrayParam = Expression.Parameter(typeof(object?[]), "params");
 
-                var i = 0;
-                foreach ((var param, var value) in visitor.Parameters.Values)
+                var variables = new ReadOnlyCollectionBuilder<ParameterExpression>(parameters.Count);
+                var expressions = new ReadOnlyCollectionBuilder<Expression>(parameters.Count + 1);
+
+                for (int i = 0; i < parameters.Count; i++)
                 {
-                    parameterCollection.Add(param);
-                    values[i++] = value;
+                    var parameter = parameters[i].Parameter;
+                    variables.Add(parameter);
+                    expressions.Add(
+                        Expression.Assign(
+                            parameter,
+                            Expression.Convert(
+                                Expression.ArrayIndex(
+                                    paramsArrayParam,
+                                    Expression.Constant(i)),
+                                parameter.Type)));
                 }
 
-                foreach ((var source, var param) in visitor.EnumerableSourceParameters)
+                expressions.Add(queryExpressionTree);
+
+                lambdaToCompile = Expression.Lambda(
+                    Expression.Block(variables, expressions),
+                    new ReadOnlyCollectionBuilder<ParameterExpression>(1) { paramsArrayParam });
+            }
+
+            return lambdaToCompile.Compile();
+        }
+
+        internal sealed class CompiledQueryCacheKey
+        {
+            public CompiledQueryCacheKey(IQuery query, IReadOnlyList<ContextParameter> parameters)
+            {
+                Query = query;
+                Parameters = parameters;
+            }
+
+            public IQuery Query { get; }
+            public IReadOnlyList<ContextParameter> Parameters { get; }
+
+            public override bool Equals(object? obj)
+            {
+                if (ReferenceEquals(this, obj))
+                    return true;
+
+                if (obj is not CompiledQueryCacheKey otherKey)
+                    return false;
+
+                if (Parameters.Count != otherKey.Parameters.Count)
+                    return false;
+
+                var comparer = new ExpressionTreeComparer();
+                for (int i = 0; i < Parameters.Count; i++)
+                    comparer.AddParameter(Parameters[i].Parameter, otherKey.Parameters[i].Parameter);
+                
+                return comparer.CompareAndValidateLabels(Query, otherKey.Query);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Query.GetHashCode();
+                for (int i = 0; i < Parameters.Count; i++)
                 {
-                    parameterCollection.Add(param);
-                    values[i++] = source.Source;
+                    ContextParameter parameter = Parameters[i];
+                    hash = HashHelpers.CombineHash(hash, parameter.Parameter.Type.GetHashCode());
                 }
 
-                var parameterisedLambda = Expression.Lambda(translatedExpr, parameterCollection);
-
-                var f = Cache.GetOrAdd(parameterisedLambda, l => l.Compile());
-                return (TFunc)f.DynamicInvoke(values)!;
+                return hash;
             }
         }
     }

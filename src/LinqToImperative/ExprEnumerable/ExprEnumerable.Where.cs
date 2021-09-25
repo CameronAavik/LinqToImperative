@@ -62,6 +62,14 @@ namespace LinqToImperative.ExprEnumerable
                 var predicate = this.predicate;
                 return baseProducer.MoveNext(cur => Expression.IfThen(predicate.InlineArguments(cur), continuation(cur)));
             }
+            
+            /// <inheritdoc/>
+            public IProducer VisitChildren(ExpressionVisitor visitor)
+            {
+                var newBaseProducer = baseProducer.VisitChildren(visitor);
+                var newPredicate = (LambdaExpression)visitor.Visit(predicate);
+                return newBaseProducer == baseProducer && newPredicate == predicate ? this : new WhereProducer(newBaseProducer, newPredicate);
+            }
         }
 
         /// <summary>
@@ -70,7 +78,7 @@ namespace LinqToImperative.ExprEnumerable
         internal readonly struct WhereNestedExprEnumerable : INestedExprEnumerable
         {
             private readonly INestedExprEnumerable baseNestedEnumerable;
-            private readonly LambdaExpression selector;
+            private readonly LambdaExpression predicate;
 
             /// <summary>
             /// Creates a new instance of <see cref="WhereNestedExprEnumerable"/>.
@@ -81,7 +89,7 @@ namespace LinqToImperative.ExprEnumerable
             {
                 BaseProducer = baseNestedEnumerable.BaseProducer;
                 this.baseNestedEnumerable = baseNestedEnumerable;
-                selector = predicate;
+                this.predicate = predicate;
                 ElementType = predicate.ReturnType;
             }
 
@@ -94,7 +102,17 @@ namespace LinqToImperative.ExprEnumerable
             /// <inheritdoc/>
             public IExprEnumerable GetNested(ParameterExpression parameter)
             {
-                return baseNestedEnumerable.GetNested(parameter).Where(selector);
+                return baseNestedEnumerable.GetNested(parameter).Where(predicate);
+            }
+
+            /// <inheritdoc/>
+            public IExprEnumerable VisitChildren(ExpressionVisitor visitor)
+            {
+                var newNestedEnumerable = (INestedExprEnumerable)baseNestedEnumerable.VisitChildren(visitor);
+                var newPredicate = (LambdaExpression)visitor.Visit(predicate);
+                return newNestedEnumerable == baseNestedEnumerable && newPredicate == predicate
+                    ? this
+                    : new WhereNestedExprEnumerable(newNestedEnumerable, newPredicate);
             }
         }
     }

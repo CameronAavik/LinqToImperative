@@ -1,6 +1,6 @@
 ﻿using LinqToImperative.ExprEnumerable;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace LinqToImperative.Expressions
@@ -33,18 +33,16 @@ namespace LinqToImperative.Expressions
         public override ExpressionType NodeType => ExpressionType.Extension;
 
         /// <inheritdoc/>
-        public override Type Type => typeof(IQueryable<>).MakeGenericType(ElementType);
+        public override Type Type => typeof(IEnumerable<>).MakeGenericType(ElementType);
 
         /// <inheritdoc/>
         public override bool CanReduce => false;
 
         /// <inheritdoc/>
-        protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
-
-        /// <inheritdoc/>
-        public override bool Equals(object? obj) => obj is EnumerableExpression expr && ReferenceEquals(Enumerable, expr.Enumerable);
-
-        /// <inheritdoc/>
-        public override int GetHashCode() => HashCode.Combine(Enumerable);
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var enumerable = Enumerable.VisitChildren(visitor);
+            return enumerable != Enumerable ? new EnumerableExpression(enumerable) : this;
+        }
     }
 }

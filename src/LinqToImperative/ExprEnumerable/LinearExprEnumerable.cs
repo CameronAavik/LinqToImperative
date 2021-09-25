@@ -1,5 +1,6 @@
 ﻿using LinqToImperative.Producers;
 using System;
+using System.Linq.Expressions;
 
 namespace LinqToImperative.ExprEnumerable
 {
@@ -11,5 +12,12 @@ namespace LinqToImperative.ExprEnumerable
     {
         /// <inheritdoc/>
         public Type ElementType => Producer.ElementType;
+
+        /// <inheritdoc/>
+        public IExprEnumerable VisitChildren(ExpressionVisitor visitor)
+        {
+            var newProducer = Producer.VisitChildren(visitor);
+            return newProducer == Producer ? this : new LinearExprEnumerable(newProducer);
+        }
     }
 }

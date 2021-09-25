@@ -1,5 +1,6 @@
 ﻿using LinqToImperative.Converters.Producers;
 using LinqToImperative.ExprEnumerable;
+using LinqToImperative.Expressions;
 using System;
 using System.Linq.Expressions;
 
@@ -18,7 +19,11 @@ namespace LinqToImperative.Converters
         /// <returns>The queryable object.</returns>
         internal static IExprEnumerable AsExprEnumerable(this Expression expression, Type? elementType = null)
         {
-            if (expression.Type.IsArray)
+            if (expression is EnumerableExpression enumerableExpression)
+            {
+                return enumerableExpression.Enumerable;
+            }
+            else if (expression.Type.IsArray)
             {
                 return new ArrayProducer(expression, elementType).AsExprEnumerable();
             }

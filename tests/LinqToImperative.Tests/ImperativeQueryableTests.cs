@@ -118,7 +118,7 @@ namespace LinqToImperative.Tests
 
             int actual = array2d
                 .AsImperativeQueryable()
-                .SelectMany(i => i)
+                .SelectMany(i => i.AsImperativeQueryable())
                 .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
             Assert.AreEqual(expected, actual);
@@ -135,7 +135,7 @@ namespace LinqToImperative.Tests
 
             int actual = array2d
                 .AsImperativeQueryable()
-                .SelectMany(i => i.Select(i => i + 1))
+                .SelectMany(i => i.AsImperativeQueryable().Select(i => i + 1))
                 .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
             Assert.AreEqual(expected, actual);
@@ -154,10 +154,32 @@ namespace LinqToImperative.Tests
 
             int actual = array2d
                 .AsImperativeQueryable()
+                .SelectMany(i => i.AsImperativeQueryable())
+                .Where(i => i % 3 == 0)
+                .Select(i => i * 4)
+                .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void ComplexTestWithQuerySyntax()
+        {
+            int[][] array2d = Enumerable.Range(0, 100).Select(i => Enumerable.Range(i, 100).ToArray()).ToArray();
+
+            int expected = array2d
                 .SelectMany(i => i)
                 .Where(i => i % 3 == 0)
                 .Select(i => i * 4)
                 .Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
+
+            var queryable =
+                from row in array2d.AsImperativeQueryable()
+                from i in row.AsImperativeQueryable()
+                where i % 3 == 0
+                select i * 4;
+
+            int actual = queryable.Aggregate(13, (acc, elem) => (acc + elem * 27) % 100001);
 
             Assert.AreEqual(expected, actual);
         }
@@ -179,7 +201,7 @@ namespace LinqToImperative.Tests
 
             int actual = array2d
                 .AsImperativeQueryable()
-                .SelectMany(i => i)
+                .SelectMany(i => i.AsImperativeQueryable())
                 .Where(i => i % 3 == 0)
                 .Select(i => i * 4)
                 .Aggregate(x, (acc, elem) => (acc + elem * y) % z);

@@ -1,5 +1,4 @@
-﻿using LinqToImperative.Expressions;
-using LinqToImperative.Producers;
+﻿using LinqToImperative.Producers;
 using LinqToImperative.Utils;
 using System;
 using System.Collections;
@@ -62,16 +61,12 @@ namespace LinqToImperative.Converters.Producers
                 continuation(currentVar));
         }
 
-        /// <summary>
-        /// Creates a <see cref="ArrayProducer"/> from an array.
-        /// </summary>
-        /// <typeparam name="T">The type of the element.</typeparam>
-        /// <param name="arr">The source array.</param>
-        /// <returns>The array producer.</returns>
-        public static EnumerableProducer Create<T>(IEnumerable<T> arr)
+
+        /// <inheritdoc/>
+        public IProducer VisitChildren(ExpressionVisitor visitor)
         {
-            var arrExpr = new EnumerableSourceExpression(arr);
-            return new EnumerableProducer(arrExpr, typeof(T));
+            var newEnumerable = visitor.Visit(enumerable);
+            return enumerable == newEnumerable ? this : new EnumerableProducer(newEnumerable, ElementType);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace LinqToImperative.Benchmarks
     //[EtwProfiler]
     public class TestBenchmark
     {
-        [Params(10, 100, 1000, 10000, 100000, 1000000, 10000000)]
+        [Params(10/*, 100, 1000, 10000, 100000, 1000000, 10000000*/)]
         public int N { get; set; }
 
         private int[] data;
@@ -38,7 +38,7 @@ namespace LinqToImperative.Benchmarks
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SumEvensHandWritten()
         {
             int sum = 0;
@@ -58,13 +58,27 @@ namespace LinqToImperative.Benchmarks
         [Benchmark]
         public int SumEvensImperativeQueryable()
         {
+
             return data
                 .AsImperativeQueryable()
                 .Where(i => (i & 1) == 0)
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
+        private static readonly Expression<Func<int, bool>> wherePredicate = i => (i & 1) == 0;
+        private static readonly Expression<Func<int, int, int>> aggregateFunc = (acc, elem) => acc + elem;
+
         [Benchmark]
+        public int SumEvensImperativeQueryableCachedExpressions()
+        {
+
+            return data
+                .AsImperativeQueryable()
+                .Where(wherePredicate)
+                .Aggregate(0, aggregateFunc);
+        }
+
+        //[Benchmark]
         public int SumEvensEnumerable()
         {
             return data
@@ -72,25 +86,25 @@ namespace LinqToImperative.Benchmarks
                 .Aggregate(0, (acc, elem) => acc + elem);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SumEvensCompiledHandWrittenExpression()
         {
             return compiledHandWrittenExpression(data);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SumEvensCompiledImperativeQueryable()
         {
             return compiledQueryableCall(data);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SumEventsHandWrittenExpression()
         {
             return SumEvensHandWrittenExpressionImpl().Compile()(data);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SumEvensQueryable()
         {
             return data
